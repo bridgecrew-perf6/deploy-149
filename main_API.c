@@ -82,7 +82,7 @@ char *createURL(char* login, char* password, char* site, char* node, long int st
     strcat(urlReturn, "&end_time=");
     sprintf(tTmp, "%ld", endTime);  
     strcat(urlReturn, tTmp);
- 
+    free(tTmp);
     //printf("URL:  %s", urlReturn);
     return urlReturn;
 
@@ -116,6 +116,16 @@ int main(int argc, char** argv){
         char *login = malloc (sizeof (*login) * 256);
         char *password = malloc (sizeof (*password) * 256);
         char *buffer = malloc (sizeof (*buffer) * 262); // LOGIN= size = 6 + 256 = 262
+        //to init string for Valgrind
+        for(int i = 0; i < 256; i++){
+            login[i] = '\0';
+        }
+        for(int i = 0; i < 256; i++){
+            password[i] = '\0';
+        }
+        for(int i = 0; i < 256; i++){
+            buffer[i] = '\0';
+        }
         FILE* fichierCred = NULL;
         fichierCred = fopen("credential", "r");
 
@@ -198,7 +208,9 @@ int main(int argc, char** argv){
             parsed_json = json_tokener_parse(chunk.response);
             struct json_object *users;
             json_object_object_get_ex(parsed_json, "users", &users);
-            //printf("Users: %s\n", json_object_get_string(users));
+            printf("Users: %s\n", json_object_get_string(users));
+            free(curl);
+
         }
         free(login);
         free(password);
