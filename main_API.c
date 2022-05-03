@@ -7,8 +7,7 @@
 #include <stdlib.h> 
 #include "main_API.h"
 #include <curl/curl.h>
-#include<json-c/json.h>
- 
+#include <cjson/cJSON.h> 
 #ifdef WIN32
 #include <io.h>
 #define READ_3RD_ARG unsigned int
@@ -83,7 +82,7 @@ char *createURL(char* login, char* password, char* site, char* node, long int st
     sprintf(tTmp, "%ld", endTime);  
     strcat(urlReturn, tTmp);
     free(tTmp);
-    printf("URL:  %s   ", urlReturn);
+    //printf("URL:  %s   ", urlReturn);
     return urlReturn;
 
 }
@@ -96,7 +95,6 @@ int main(int argc, char** argv){
     }
     long int tStampStart = time(NULL);
     if (pid == 0) { //child 
-        printf("printed from child process - %d\n", getpid());
         //waste tme
         int k = 0;
         for(int i = 0 ; i < 1000000; i++){
@@ -104,14 +102,11 @@ int main(int argc, char** argv){
         }
         exit(EXIT_SUCCESS);
     } else { //father, wait for child end and make API ASK
-        printf("printed from parent process - %d\n", getpid());
         wait(NULL);
         //GET the timestamp
         long int tStampStop = time(NULL);
-        printf("\nLes deux timestamp sont: \n %ld  - start \n %ld  - stop \n ", tStampStart, tStampStop);
+        printf("The two timestamp are: \n %ld  - start \n %ld  - stop \n ", tStampStart, tStampStop);
 
-        //ask API
-        printf("Time to ask the API:\n");
         //retrieve login and password
         char *login = malloc (sizeof (*login) * 256);
         char *password = malloc (sizeof (*password) * 256);
@@ -190,12 +185,10 @@ int main(int argc, char** argv){
             curl_easy_setopt(curl, CURLOPT_USERPWD, cred);
             free(cred);
             
-
             // send all data to this function
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cb);
             // we pass our 'chunk' struct to the callback function
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-
 
             /* Perform the request, res will get the return code */
             res = curl_easy_perform(curl);
@@ -206,50 +199,26 @@ int main(int argc, char** argv){
             /* always cleanup */
             curl_easy_cleanup(curl);
 
-            printf("\nPrint the response\n");
-            sleep(10);
-            //printf("----------%s", chunk.response);
-            printf("End of response writing \n");
-            struct json_object *parsed_json;
-            parsed_json = json_tokener_parse(chunk.response);
-            size_t len_json = json_object_array_length(parsed_json);
-            printf("nombre de données recuperés: %ld \n", len_json);
-            
-            struct json_object *data;
-    
-            enum json_type data2;
-            struct json_object *value;
-            double mean = 0;
-            //printf("The json string:\n\n%s\n\n", json_object_to_json_string(parsed_json));
-   
-            printf("The json object to string:\n\n%s\n", json_object_to_json_string_ext(parsed_json, JSON_C_TO_STRING_PRETTY));
+            cJSON *json_obj = cJSON_Parse(chunk.response);
+            cJSON *subitem;
+            cJSON *tmp;
+            int size_response = cJSON_GetArraySize(json_obj);
+            double avg = 0;
+            //for each element in the json array
+            for (int i = 0; i < size_response; i++){
+                subitem = cJSON_GetArrayItem(json_obj, i);
+                tmp = subitem->child;
+                //locate the value
+                while(strcmp(tmp->string,"value") != 0){
+                    tmp = tmp->next;
+                }
+                //add it to the mean
+                avg += tmp->valuedouble;
+            }
 
-            //data = json_object_get_int(json_object_array_get_idx(parsed_json, 2));
-            for (int i=0; i<len_json; i++)
-            {
-                data = json_object_get_string(json_object_array_get_idx(parsed_json, i));
-                //data2 = json_object_get_int(json_object_array_get_idx(parsed_json, 2));
-                printf("The value at %i position is: %s\n", i, data);
-                json_object *name = json_object_object_get_ex(data, "value", value);
-                name = json_object_object_get(data, "name");
-                printf("La value vaut: %s \n", json_object_get_string(name));
-                printf("La value V2 vaut: %s \n", json_object_get_string(value));
-                //value = json_object_object_get(data, "value");
-                
-            }
-            json_object_put(parsed_json);
-            
-            /*
-            for(int i = 0; i < len_json; i++){
-                json_object_object_get_ex(parsed_json, i, &data);
-                //printf("Data = %s", data);
-                value = json_object_array_get_idx(data, i);
-                printf("Age: %d\n", json_object_get_int(value));
-                //mean += json_object_get_int(value);
-            }
-            printf("\n End for \n");
-            //printf("Users: %s\n", json_object_get_string(value));
-            */
+        printf("On average, consumption of %f Watt\n", avg/size_response);
+
+
             
         }
         free(login);

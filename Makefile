@@ -3,7 +3,7 @@ all: main main_API
 CC=gcc
 CFLAGS=-O2 -pipe -Wall
 LDFLAGS=-O2 -L/usr/local/include -lqt
-LIBFLAGS=-lcurl -ljson-c
+LIBFLAGS=-lcurl -lcjson
 
 
 main: main.o
