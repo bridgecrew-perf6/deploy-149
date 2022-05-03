@@ -83,7 +83,7 @@ char *createURL(char* login, char* password, char* site, char* node, long int st
     sprintf(tTmp, "%ld", endTime);  
     strcat(urlReturn, tTmp);
     free(tTmp);
-    //printf("URL:  %s", urlReturn);
+    printf("URL:  %s   ", urlReturn);
     return urlReturn;
 
 }
@@ -99,7 +99,7 @@ int main(int argc, char** argv){
         printf("printed from child process - %d\n", getpid());
         //waste tme
         int k = 0;
-        for(int i = 0 ; i < 000000; i++){
+        for(int i = 0 ; i < 1000000; i++){
             printf("k= %d\n", (k += 3) % 50);
         }
         exit(EXIT_SUCCESS);
@@ -175,7 +175,8 @@ int main(int argc, char** argv){
 
             char* urlToSend = createURL(login, password, site, node, tStampStart, tStampStop);
             //curl_easy_setopt(curl, CURLOPT_URL, "https://back.overstats.fr/");
-            curl_easy_setopt(curl, CURLOPT_URL, "https://socket.rakura.fr/getRooms?connect=rakura");
+            //curl_easy_setopt(curl, CURLOPT_URL, "https://socket.rakura.fr/getRooms?connect=rakura");
+            curl_easy_setopt(curl, CURLOPT_URL, urlToSend);
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); //follow redirections
             free(urlToSend);
             //to create a string like login:password for authentication
@@ -207,14 +208,49 @@ int main(int argc, char** argv){
 
             printf("\nPrint the response\n");
             sleep(10);
-            //printf("%s", chunk.response);
+            //printf("----------%s", chunk.response);
             printf("End of response writing \n");
             struct json_object *parsed_json;
             parsed_json = json_tokener_parse(chunk.response);
-            struct json_object *users;
-            json_object_object_get_ex(parsed_json, "users", &users);
-            printf("Users: %s\n", json_object_get_string(users));
+            size_t len_json = json_object_array_length(parsed_json);
+            printf("nombre de données recuperés: %ld \n", len_json);
+            
+            struct json_object *data;
+    
+            enum json_type data2;
+            struct json_object *value;
+            double mean = 0;
+            //printf("The json string:\n\n%s\n\n", json_object_to_json_string(parsed_json));
+   
+            printf("The json object to string:\n\n%s\n", json_object_to_json_string_ext(parsed_json, JSON_C_TO_STRING_PRETTY));
 
+            //data = json_object_get_int(json_object_array_get_idx(parsed_json, 2));
+            for (int i=0; i<len_json; i++)
+            {
+                data = json_object_get_string(json_object_array_get_idx(parsed_json, i));
+                //data2 = json_object_get_int(json_object_array_get_idx(parsed_json, 2));
+                printf("The value at %i position is: %s\n", i, data);
+                json_object *name = json_object_object_get_ex(data, "value", value);
+                name = json_object_object_get(data, "name");
+                printf("La value vaut: %s \n", json_object_get_string(name));
+                printf("La value V2 vaut: %s \n", json_object_get_string(value));
+                //value = json_object_object_get(data, "value");
+                
+            }
+            json_object_put(parsed_json);
+            
+            /*
+            for(int i = 0; i < len_json; i++){
+                json_object_object_get_ex(parsed_json, i, &data);
+                //printf("Data = %s", data);
+                value = json_object_array_get_idx(data, i);
+                printf("Age: %d\n", json_object_get_int(value));
+                //mean += json_object_get_int(value);
+            }
+            printf("\n End for \n");
+            //printf("Users: %s\n", json_object_get_string(value));
+            */
+            
         }
         free(login);
         free(password);
