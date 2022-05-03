@@ -142,6 +142,7 @@ int main(int argc, char** argv){
                     login[i] = buffer[i+lenL];
                     i++;
                 }
+                login[i] = '\0';
             }
             for(i = 0; buffer[i] == PASSWORD[i] && PASSWORD[i] == '\0'; i++);
 
@@ -153,6 +154,7 @@ int main(int argc, char** argv){
                     password[i] = buffer[i+lenP];
                     i++;
                 }
+                password[i] = '\0';
             }
         }
         free(buffer);
@@ -177,7 +179,10 @@ int main(int argc, char** argv){
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); //follow redirections
             free(urlToSend);
             //to create a string like login:password for authentication
-            char *cred = calloc(1,(strlen(login) + strlen(password) +1));
+            char *cred = malloc(strlen(login) + 1 + strlen(password) + 1); // +2 for the ":" and the '\0' | strlen doesn't count \0 at the end
+            for(int i = 0; i < sizeof(cred); i++){
+                cred[i] = '\0';
+            }
             strcat(cred, login);
             strcat(cred, ":");
             strcat(cred, password);
@@ -209,7 +214,6 @@ int main(int argc, char** argv){
             struct json_object *users;
             json_object_object_get_ex(parsed_json, "users", &users);
             printf("Users: %s\n", json_object_get_string(users));
-            free(curl);
 
         }
         free(login);
