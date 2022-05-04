@@ -82,24 +82,34 @@ char *createURL(char* login, char* password, char* site, char* node, long int st
     sprintf(tTmp, "%ld", endTime);  
     strcat(urlReturn, tTmp);
     free(tTmp);
-    //printf("URL:  %s   ", urlReturn);
+    printf("URL:  %s\n", urlReturn);
     return urlReturn;
 
 }
 
 int main(int argc, char** argv){
+    char* site = "lyon";
+    char* node = "taurus-1";
+    if(argc < 3){
+        printf("Not enough arguments\n\tsite:Lyon\n\tnode:taurus-1\n will be used by default.\nPlease supply with the site and the name of the node to execute the program\n");
+    }else{
+        site = argv[1];
+        node = argv[2];
+    }
+
+    sleep(3);
     pid_t pid = fork();
     if (pid == -1) { //error
         perror("fork");
         exit(EXIT_FAILURE);
     }
+    int returnCodeEx = 0;
     long int tStampStart = time(NULL);
     if (pid == 0) { //child 
         //waste tme
-        int k = 0;
-        for(int i = 0 ; i < 1000000; i++){
-            printf("k= %d\n", (k += 3) % 50);
-        }
+        char* filename = "./launch.sh";
+        char *argv_for_program[] = { filename, NULL };
+        returnCodeEx = execv(filename, argv_for_program);
         exit(EXIT_SUCCESS);
     } else { //father, wait for child end and make API ASK
         wait(NULL);
@@ -165,8 +175,6 @@ int main(int argc, char** argv){
              //init the struct to 0
             struct memory chunk = {0};
             
-            char* site = "lyon";
-            char* node = "taurus-1";
 
             char* urlToSend = createURL(login, password, site, node, tStampStart, tStampStop);
             //curl_easy_setopt(curl, CURLOPT_URL, "https://back.overstats.fr/");
@@ -215,9 +223,11 @@ int main(int argc, char** argv){
                 //add it to the mean
                 avg += tmp->valuedouble;
             }
-
-        printf("On average, consumption of %f Watt\n", avg/size_response);
-
+        if(returnCodeEx == -1){
+            printf("Error when tried to launch the make, no value available \n");
+        }else{
+            printf("On average, consumption of %f Watt\n", avg/size_response);
+        }
 
             
         }
