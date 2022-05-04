@@ -212,6 +212,7 @@ int main(int argc, char** argv){
             cJSON *tmp;
             int size_response = cJSON_GetArraySize(json_obj);
             double avg = 0;
+            double joule = 0;
             //for each element in the json array
             for (int i = 0; i < size_response; i++){
                 subitem = cJSON_GetArrayItem(json_obj, i);
@@ -221,12 +222,14 @@ int main(int argc, char** argv){
                     tmp = tmp->next;
                 }
                 //add it to the mean
+                joule += tmp->valuedouble;
                 avg += tmp->valuedouble;
             }
         if(returnCodeEx == -1){
             printf("Error when tried to launch the make, no value available \n");
         }else{
             printf("On average, consumption of %f Watt\n", avg/size_response);
+            printf("Energy deployed: %f J in a time of %lds\n", joule, tStampStop-tStampStart);
         }
 
             
