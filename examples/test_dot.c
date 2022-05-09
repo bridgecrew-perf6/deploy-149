@@ -6,7 +6,7 @@
 
 #include "flop.h"
 
-#define VECSIZE 500000
+#define VECSIZE 10000
 
 #define NB_FOIS 41943
 

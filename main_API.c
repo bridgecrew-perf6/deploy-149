@@ -9,6 +9,7 @@
 #include <curl/curl.h>
 #include <cjson/cJSON.h> 
 #include <time.h>
+#include "papi.h"
 #ifdef WIN32
 #include <io.h>
 #define READ_3RD_ARG unsigned int
@@ -212,7 +213,7 @@ int main(int argc, char** argv){
             res = curl_easy_perform(curl);
             /* Check for errors */
             if(res != CURLE_OK){
-                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+                printf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
             }
             /* always cleanup */
             curl_easy_cleanup(curl);
@@ -235,14 +236,27 @@ int main(int argc, char** argv){
                 joule += tmp->valuedouble;
                 avg += tmp->valuedouble;
             }
-        if(returnCodeEx == -1){
-            printf("Error when tried to launch the make, no value available \n");
-        }else{
-            printf("On average, consumption of %f Watt\n", avg/size_response);
-            printf("Energy deployed: %f J in a time of %lds\n", joule, tStampStop-tStampStart);
-        }
+            if(returnCodeEx == -1){
+                printf("Error when tried to launch the make, no value available \n");
+            }else{
+                printf("On average, consumption of %f Watt\n", avg/size_response);
+                printf("Energy deployed: %f J in a time of %lds\n", joule, tStampStop-tStampStart);
+            }
 
             
+        }
+        int retval;
+
+        retval = PAPI_hl_region_begin("computation");
+        if ( retval != PAPI_OK ){
+            exit(EXIT_FAILURE);
+        }
+
+        /* Do some computation here */
+
+        retval = PAPI_hl_region_end("computation");
+        if ( retval != PAPI_OK ){
+            exit(EXIT_FAILURE);
         }
         free(login);
         free(password);

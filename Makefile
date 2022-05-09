@@ -3,7 +3,8 @@ all: main_API
 CC=gcc
 CFLAGS=-O2 -pipe -Wall
 LDFLAGS=-O2 -L/usr/local/include -lqt
-LIBFLAGS=-lcurl -lcjson
+LIBFLAGS=-lcurl -lcjson -lpapi
+#LIBFLAGS=-lcurl -lcjson -L./papi-perf_event/lib/libpapi.a
 SRC_DIR=./src
 EXA_DIR=./examples
 
