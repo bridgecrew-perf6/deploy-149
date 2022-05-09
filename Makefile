@@ -9,6 +9,8 @@ EXA_DIR=./examples
 
 
 main_API: main_API.o
+	make -C $(SRC_DIR)
+	make -C $(EXA_DIR)
 	$(CC) -o main_API $(LDLAGS) main_API.o $(LIBFLAGS)
 
 main_API.o: main_API.c

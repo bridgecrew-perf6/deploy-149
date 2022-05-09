@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#please make sur that make was already done for main_API
 cd ./src
 make clean
 make all

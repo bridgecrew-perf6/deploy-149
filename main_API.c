@@ -8,6 +8,7 @@
 #include "main_API.h"
 #include <curl/curl.h>
 #include <cjson/cJSON.h> 
+#include <time.h>
 #ifdef WIN32
 #include <io.h>
 #define READ_3RD_ARG unsigned int
@@ -104,6 +105,8 @@ int main(int argc, char** argv){
         exit(EXIT_FAILURE);
     }
     int returnCodeEx = 0;
+    struct timespec tsStart;
+    timespec_get(&tsStart, TIME_UTC);
     long int tStampStart = time(NULL);
     if (pid == 0) { //child 
         //waste tme
@@ -114,9 +117,16 @@ int main(int argc, char** argv){
     } else { //father, wait for child end and make API ASK
         wait(NULL);
         //GET the timestamp
+        struct timespec tsStop;
+        timespec_get(&tsStop, TIME_UTC);
+
         long int tStampStop = time(NULL);
         printf("The two timestamp are: \n %ld  - start \n %ld  - stop \n ", tStampStart, tStampStop);
+        printf("Precise timeStamp: \n");
+        printf("Start: %lld.%.9ld\n", (long long)tsStart.tv_sec, tsStart.tv_nsec);   
+        printf("Stop: %lld.%.9ld\n", (long long)tsStop.tv_sec, tsStop.tv_nsec);   
 
+        
         //retrieve login and password
         char *login = malloc (sizeof (*login) * 256);
         char *password = malloc (sizeof (*password) * 256);
