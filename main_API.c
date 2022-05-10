@@ -9,7 +9,6 @@
 #include <curl/curl.h>
 #include <cjson/cJSON.h> 
 #include <time.h>
-#include "papi.h"
 #ifdef WIN32
 #include <io.h>
 #define READ_3RD_ARG unsigned int
@@ -110,7 +109,7 @@ int main(int argc, char** argv){
     timespec_get(&tsStart, TIME_UTC);
     long int tStampStart = time(NULL);
     if (pid == 0) { //child 
-        //waste tme
+        //waste time
         char* filename = "./launch.sh";
         char *argv_for_program[] = { filename, NULL };
         returnCodeEx = execv(filename, argv_for_program);
@@ -213,7 +212,9 @@ int main(int argc, char** argv){
             res = curl_easy_perform(curl);
             /* Check for errors */
             if(res != CURLE_OK){
+                
                 printf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+                printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
             }
             /* always cleanup */
             curl_easy_cleanup(curl);
@@ -245,19 +246,10 @@ int main(int argc, char** argv){
 
             
         }
-        int retval;
+        
 
-        retval = PAPI_hl_region_begin("computation");
-        if ( retval != PAPI_OK ){
-            exit(EXIT_FAILURE);
-        }
 
-        /* Do some computation here */
-
-        retval = PAPI_hl_region_end("computation");
-        if ( retval != PAPI_OK ){
-            exit(EXIT_FAILURE);
-        }
+        
         free(login);
         free(password);
     }

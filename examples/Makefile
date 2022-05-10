@@ -13,7 +13,7 @@ OPTIONS_LINK_STATIC  =   -fopenmp -L$(LIB_DIR) $(LIBST)
 OPTIONS_LINK_DYN  = -fopenmp -L$(LIB_DIR) $(LIBDYN)
 
 test_dot: test_dot.o flop.o $(LIB_DIR)/libmnblas.a
-	gcc -o test_dot test_dot.o flop.o $(OPTIONS_LINK_STATIC)
+	gcc -o test_dot test_dot.o flop.o $(OPTIONS_LINK_STATIC) -lpapi
 
 flop.o: flop.c flop.h
 	gcc $(OPTIONS_COMPIL) -c flop.c
