@@ -176,16 +176,6 @@ int main(int argc, char **argv)
 	}
 	 
 
-    //add all events previously get
-    for(int i = 0; i < num_events; i++){
-    	retval = PAPI_add_named_event(EventSet, events[i] );
-     	if(retval != PAPI_OK){
-     		fprintf(stderr,"Error adding event %s\n",events[i]);
-     		exit(1);
-    	}
-    }
-
-
 	init_flop();
 	//opening the file to write data
 	FILE* fptRAPL ;
@@ -203,7 +193,9 @@ int main(int argc, char **argv)
 		//don't interrupt the program to let computing 
     	//exit(1);
     }
-
+	double oldPackageNrj = 0;
+	double oldDramNrj = 0;
+	double oldPp0Nrj = 0;
   	for (i = 0; i < NB_FOIS; i++){
     	vector_init(vec1, 1.0);
     	vector_init(vec2, 2.0);
@@ -242,23 +234,19 @@ int main(int argc, char **argv)
 				
 			}
 		}
+		
 		//timestamps
 		fprintf(fptRAPL,"%f,", tmpTime/1.0e9);
 		//Package_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", packageNrj);
+		fprintf(fptRAPL,"%f,", packageNrj-oldPackageNrj);
 		//DRAM_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", dramNrj);
+		fprintf(fptRAPL,"%f,", dramNrj-oldDramNrj);
 		//PP0_Energy:Package0+1
-		fprintf(fptRAPL,"%f\n", pp0Nrj);
+		fprintf(fptRAPL,"%f\n", pp0Nrj-oldPp0Nrj);
 
-
-		//reset: 
-		retval = PAPI_reset(EventSet);
-		if (retval != PAPI_OK){
-			printf("Error while reseting PAPI_counter\n");
-			//don't interrupt the program to let computing 
-    		//exit(1);
-		}
+		oldPackageNrj = packageNrj;
+		oldDramNrj = dramNrj;
+		oldPp0Nrj = pp0Nrj;
 
 		//printf("mncblas_sdot %d : res = %3.2f nombre de cycles: %Ld \n", i, res, end - start);
     	somme_double += calcul_flop_ret("sdot ", 2 * VECSIZE, end - start);
@@ -308,20 +296,16 @@ int main(int argc, char **argv)
 		//timestamps
 		fprintf(fptRAPL,"%f,", tmpTime/1.0e9);
 		//Package_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", packageNrj);
+		fprintf(fptRAPL,"%f,", packageNrj-oldPackageNrj);
 		//DRAM_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", dramNrj);
+		fprintf(fptRAPL,"%f,", dramNrj-oldDramNrj);
 		//PP0_Energy:Package0+1
-		fprintf(fptRAPL,"%f\n", pp0Nrj);
+		fprintf(fptRAPL,"%f\n", pp0Nrj-oldPp0Nrj);
 
+		oldPackageNrj = packageNrj;
+		oldDramNrj = dramNrj;
+		oldPp0Nrj = pp0Nrj;
 
-		//reset: 
-		retval = PAPI_reset(EventSet);
-		if (retval != PAPI_OK){
-			printf("Error while reseting PAPI_counter\n");
-			//don't interrupt the program to let computing 
-    		//exit(1);
-		}
 
     	//printf("mncblas_cdotu_sub %d : res = %3.2f +i %3.2f nombre de cycles: %Ld \n", i, resComplexe.real, resComplexe.imaginary, end - start);
 
