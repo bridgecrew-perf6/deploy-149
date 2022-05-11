@@ -213,7 +213,6 @@ int main(int argc, char** argv){
             /* Check for errors */
             if(res != CURLE_OK){
                 
-                printf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
                 printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
             }
             /* always cleanup */

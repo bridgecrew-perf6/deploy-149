@@ -29,7 +29,7 @@ void calcul_flop (char *message, int nb_operations_flottantes, unsigned long lon
 double calcul_flop_ret (char *message, int nb_operations_flottantes, unsigned long long int cycles)
 {
   float to_ret = ((float) nb_operations_flottantes) / (((float) (cycles - residu)) * duree_cycle);
-  printf ("%s %d operations %5.3f GFLOP/s\n", message, nb_operations_flottantes, to_ret) ;
+  //printf ("%s %d operations %5.3f GFLOP/s\n", message, nb_operations_flottantes, to_ret) ;
   return (double) to_ret;
 }
 
