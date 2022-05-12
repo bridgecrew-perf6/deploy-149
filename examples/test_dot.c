@@ -71,7 +71,7 @@ int main(int argc, char **argv)
   	double somme_double_cp = 0.f;
 
   	//init PAPI
-	int retval,cid,rapl_cid=-1,numcmp;
+	int retval,cid,rapl_cid=-1,numcmp,coretemp_cid=-1;
     int EventSet = PAPI_NULL;
     long long values[MAX_EVENTS];
     int code,enum_retval;
@@ -103,22 +103,35 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 
+		//try to found rapl
 		if (strstr(cmpinfo->name,"rapl")) {
 			rapl_cid=cid;
 			printf("Found rapl component at cid %d\n", rapl_cid);
 
 			if (cmpinfo->disabled) {
 				fprintf(stderr,"No rapl events found: %s\n", cmpinfo->disabled_reason);
-				//don't interrupt the program to let computing 
-    			//exit(1);
+
 			}
+		}
+		//try to found coretemp
+		if (strstr(cmpinfo->name,"coretemp")) {
+			coretemp_cid=cid;
+			printf("Found coretemp component at cid %d\n", rapl_cid);
+
+			if (cmpinfo->disabled) {
+				fprintf(stderr,"No coretemp events found: %s\n", cmpinfo->disabled_reason);
+
+			}
+		}
+		if(rapl_cid != -1 && coretemp_cid != -1){
 			break;
 		}
+
     }
      
 	//if the component was not found beyond all
     if (cid==numcmp) {
-		fprintf(stderr,"No rapl component found\n");
+		fprintf(stderr,"No components to use found\n");
 		//don't interrupt the program to let computing 
     	//exit(1);
     }
@@ -137,9 +150,11 @@ int main(int argc, char **argv)
 	//search in the component cid events available
     code = PAPI_NATIVE_MASK;
 
-    enum_retval = PAPI_enum_cmp_event( &code, PAPI_ENUM_FIRST, cid );
+    //enum_retval = PAPI_enum_cmp_event( &code, PAPI_ENUM_FIRST, cid );
+	enum_retval = PAPI_enum_cmp_event( &code, PAPI_ENUM_FIRST, rapl_cid );
+	cid = rapl_cid;
     
-	while ( enum_retval == PAPI_OK ) {
+	while ( enum_retval == PAPI_OK || cid != rapl_cid) {
 		//get the name in event_name with the code
     	retval = PAPI_event_code_to_name( code, event_names[num_events] );
     	//in case of error
@@ -164,11 +179,15 @@ int main(int argc, char **argv)
 	  		break;
 		}
 		num_events++;
-		//get the next event
+		//get the next event in rapl and when finish, in coretemp
     	enum_retval = PAPI_enum_cmp_event( &code, PAPI_ENUM_EVENTS, cid );
+		if(enum_retval == PAPI_OK){
+			cid = coretemp_cid;
+			enum_retval = PAPI_enum_cmp_event( &code, PAPI_ENUM_EVENTS, cid );
+		}
     }
 
-  	//if no RAPL were found:
+  	//if no events were found:
 	if(num_events == 0){
 		printf("Error, no RAPL event were found\n");
 		//don't interrupt the program to let computing 
@@ -178,9 +197,9 @@ int main(int argc, char **argv)
 
 	init_flop();
 	//opening the file to write data
-	FILE* fptRAPL ;
-	fptRAPL = fopen( "../out/rapl.csv", "w+");
-	if (fptRAPL==NULL){
+	FILE* fptData ;
+	fptData = fopen( "../out/datas.csv", "w+");
+	if (fptData==NULL){
         printf("\nCan't open the file\n");
         exit(1);
     }
@@ -219,6 +238,7 @@ int main(int argc, char **argv)
 		double packageNrj = 0;
 		double dramNrj = 0;
 		double pp0Nrj = 0;
+		double temp = 0;
 		for(int i = 0; i < num_events; i++){
 			if (strstr(units[i],"nJ")) {
 				if(strstr(event_names[i], "PACKAGE_ENERGY:PACKAGE")){
@@ -230,23 +250,31 @@ int main(int argc, char **argv)
 				}else if (strstr(event_names[i], "PACKAGE_ENERGY:PACKAGE")){
 					printf("PP0 energy found\n");
 					pp0Nrj += (double)values[i]/1.0e9;
+				}else if (strstr(event_names[i], "hwmon0:temp1")){
+					printf("Temperature found\n");
+					temp += (double)values[i]/1000.0;
 				}
 				
 			}
 		}
 		
-		//timestamps
-		fprintf(fptRAPL,"%f,", tmpTime/1.0e9);
-		//Package_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", packageNrj-oldPackageNrj);
-		//DRAM_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", dramNrj-oldDramNrj);
-		//PP0_Energy:Package0+1
-		fprintf(fptRAPL,"%f\n", pp0Nrj-oldPp0Nrj);
+		if(i%5 == 0){
+			//timestamps
+			fprintf(fptData,"%f,%f,%f,%f,%f\n", 
+			tmpTime/1.0e9,packageNrj,dramNrj,pp0Nrj,temp);
+			//Package_Energy:Package0+1
+			//fprintf(fptRAPL,"%f,", packageNrj-oldPackageNrj);
+			//DRAM_Energy:Package0+1
+			//fprintf(fptRAPL,"%f,", dramNrj-oldDramNrj);
+			//PP0_Energy:Package0+1
+			//fprintf(fptRAPL,"%f\n", pp0Nrj-oldPp0Nrj);
+			oldPackageNrj = packageNrj;
+			oldDramNrj = dramNrj;
+			oldPp0Nrj = pp0Nrj;
 
-		oldPackageNrj = packageNrj;
-		oldDramNrj = dramNrj;
-		oldPp0Nrj = pp0Nrj;
+		}
+	
+
 
 		//printf("mncblas_sdot %d : res = %3.2f nombre de cycles: %Ld \n", i, res, end - start);
     	somme_double += calcul_flop_ret("sdot ", 2 * VECSIZE, end - start);
@@ -278,6 +306,7 @@ int main(int argc, char **argv)
 		double packageNrj = 0;
 		double dramNrj = 0;
 		double pp0Nrj = 0;
+		double temp = 0;
 		for(int i = 0; i < num_events; i++){
 			if (strstr(units[i],"nJ")) {
 				if(strstr(event_names[i], "PACKAGE_ENERGY:PACKAGE")){
@@ -289,29 +318,36 @@ int main(int argc, char **argv)
 				}else if (strstr(event_names[i], "PACKAGE_ENERGY:PACKAGE")){
 					printf("PP0 energy found\n");
 					pp0Nrj += (double)values[i]/1.0e9;
+				}else if (strstr(event_names[i], "hwmon0:temp1")){
+					printf("Temperature found\n");
+					temp += (double)values[i]/1000.0;
 				}
 				
 			}
 		}
-		//timestamps
-		fprintf(fptRAPL,"%f,", tmpTime/1.0e9);
-		//Package_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", packageNrj-oldPackageNrj);
-		//DRAM_Energy:Package0+1
-		fprintf(fptRAPL,"%f,", dramNrj-oldDramNrj);
-		//PP0_Energy:Package0+1
-		fprintf(fptRAPL,"%f\n", pp0Nrj-oldPp0Nrj);
+		
+		if(i%5 == 0){
+			//timestamps
+			fprintf(fptData,"%f,%f,%f,%f,%f\n", 
+			tmpTime/1.0e9,packageNrj,dramNrj,pp0Nrj,temp);
+			//Package_Energy:Package0+1
+			//fprintf(fptRAPL,"%f,", packageNrj-oldPackageNrj);
+			//DRAM_Energy:Package0+1
+			//fprintf(fptRAPL,"%f,", dramNrj-oldDramNrj);
+			//PP0_Energy:Package0+1
+			//fprintf(fptRAPL,"%f\n", pp0Nrj-oldPp0Nrj);
+			oldPackageNrj = packageNrj;
+			oldDramNrj = dramNrj;
+			oldPp0Nrj = pp0Nrj;
 
-		oldPackageNrj = packageNrj;
-		oldDramNrj = dramNrj;
-		oldPp0Nrj = pp0Nrj;
+		}
 
 
     	//printf("mncblas_cdotu_sub %d : res = %3.2f +i %3.2f nombre de cycles: %Ld \n", i, resComplexe.real, resComplexe.imaginary, end - start);
 
     	somme_double_cp += calcul_flop_ret("sdot ", 8 * VECSIZE, end - start);
   	}
-	fclose(fptRAPL);
+	fclose(fptData);
 	printf("\n");
 	printf("=======================================================\n");
 
