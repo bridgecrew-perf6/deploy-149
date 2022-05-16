@@ -1,6 +1,6 @@
 #!/bin/bash
 shopt -s expand_aliases
-source ~/.bash_aliases
+source /home/cpelisseverdoux/.bash_aliases
 
 if ! command -v mojitos &> /dev/null
 then
@@ -10,6 +10,7 @@ then
     echo "Don't forget to reload: source ~/.bash_aliases"
     exit
 else	
+	echo "Execution of mojitos"
 	mojitos -r -c -o $(pwd)/Results.csv -e $(pwd)/examples/test_dot    
 
 	
