@@ -11,7 +11,10 @@ then
     exit
 else	
 	echo "Execution of mojitos"
-	mojitos -r -c -o $(pwd)/Results.csv -e $(pwd)/examples/test_dot    
-
-	
+	#mojitos -r -c -o $(pwd)/Results.csv -e $(pwd)/examples/test_dot    
+	mojitos -t 180 -f 4 -r -c > res.csv &
+	MOJITO_PID=$!
+	$(pwd)/examples/test_dot
+	echo "Test_dot finish"
+	kill -9 $MOJITO_PID
 fi
